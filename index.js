@@ -32,7 +32,7 @@ app.post('/quizzes', async(req, res) => {
 
         const client = await pool.connect();
         const result = await client.query(
-            'INSERT INTO quizzes (question, options, right_answer, start_date, end_date) VALUES ($1, $2, $3, $4, $5) RETURNING *', [question, options, rightAnswer, startDate, endDate]
+            'INSERT INTO quizzes (question, options, right_answer, start_date, end_date, status) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [question, options, rightAnswer, startDate, endDate, 'inactive']
         );
         const createdQuiz = result.rows[0];
         client.release();
@@ -44,18 +44,18 @@ app.post('/quizzes', async(req, res) => {
     }
 });
 
-// Retrieve the active quiz
+// Retrieve the active quizzes
 app.get('/quizzes/active', async(req, res) => {
     try {
         const currentDateTime = new Date().toISOString();
         const client = await pool.connect();
         const result = await client.query(
-            'SELECT * FROM quizzes WHERE start_date <= $1 AND end_date >= $2', [currentDateTime, currentDateTime]
+            'SELECT id, question, options, start_date, end_date FROM quizzes WHERE start_date <= $1 AND end_date >= $2', [currentDateTime, currentDateTime]
         );
-        const activeQuiz = result.rows[0];
+        const activeQuizzes = result.rows;
         client.release();
 
-        res.status(200).json(activeQuiz);
+        res.status(200).json(activeQuizzes);
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Internal server error' });
